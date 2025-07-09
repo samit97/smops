@@ -67,9 +67,9 @@ def read_input_image_header(im_name):
     """
     snitch.debug(f"Reading image: {im_name} header")
     info = {}
-
+    
     info["name"] = im_name
-   
+    
     with fits.open(im_name, readonly=True) as hdu_list:
         # print(f"There are:{len(hdu_list)} HDUs in this image")
         for hdu in hdu_list:
@@ -79,11 +79,27 @@ def read_input_image_header(im_name):
                 if hdu.header[f"CUNIT{i}"].lower() == "hz":
                     info["freq"] = hdu.header[f"CRVAL{i}"]
                     info["freq_delta"] = hdu.header[f"CDELT{i}"]
-
-            #get the wsum
-            info["wsum"] = hdu.header["WSCVWSUM"]
+    
+            # get the wsum with fallback to WSCIMGWG if WSCVWSUM is zero or missing
+            wsum = hdu.header.get("WSCVWSUM", 0.0)
+            if wsum == 0.0:
+                wsum = hdu.header.get("WSCIMGWG", 1.0)
+            info["wsum"] = wsum
             info["data"] = hdu.data
-    return info
+    return info    
+    # with fits.open(im_name, readonly=True) as hdu_list:
+    #     # print(f"There are:{len(hdu_list)} HDUs in this image")
+    #     for hdu in hdu_list:
+    #         naxis = hdu.header["NAXIS"]
+    #         # get the center frequency
+    #         for i in range(1, naxis+1):
+    #             if hdu.header[f"CUNIT{i}"].lower() == "hz":
+    #                 info["freq"] = hdu.header[f"CRVAL{i}"]
+    #                 info["freq_delta"] = hdu.header[f"CDELT{i}"]
+    #         #get the wsum
+    #         info["wsum"] = hdu.header["WSCVWSUM"]
+    #         info["data"] = hdu.data
+    # return info
 
 
 def get_band_start_and_band_width(freq_delta, first_freq, last_freq):
